@@ -1,8 +1,7 @@
 def i_type(unit, PC, labels, idx):
-
     # funct3 and opcode values
     funct3_map = {"lw":"010","addi":"000","sltiu":"011","jalr":"000"}
-
+    
     opcode_map = {"lw":"0000011","addi":"0010011","sltiu":"0010011","jalr":"1100111"}
 
     op = unit[0]
@@ -47,3 +46,4 @@ def i_type(unit, PC, labels, idx):
     # final encoding
 
     return imm_bin + rs1_bin + funct3 + rd_bin + opcode
+
