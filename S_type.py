@@ -1,32 +1,31 @@
 def s_type(unit, idx):
+    if len(unit) != 3:  #syntax error check
+        raise ValueError(f"Line {idx}: Invalid syntax")
 
-    opcode = "0100011"
+    opcode = "0100011" #predefined
     funct3 = "010"
+    
+    rs2 = unit[1]
 
-    # expected format: sw rs2 imm(rs1)
-    if(len(unit) != 3):
-        raise ValueError(f"Line {idx}: Invalid sw syntax")
-
-    _, rs2, mem = unit
-
-    imm = int(mem.split("(")[0])
-    rs1 = mem.split("(")[1][:-1]
-
-    if(rs1 not in reg_map or rs2 not in reg_map):
+    temp = unit[2]    #taking 2nd position value in temp
+    parts = temp.split("(")    #splitting
+    imm = int(parts[0])    #imm value gets by splitting
+    rs1 = parts[1][:-1]    #gets rs1 value
+    
+    if rs1 not in reg_map:  #invalid register check
         raise ValueError(f"Line {idx}: Invalid register")
 
-    # convert negative immediate
-    if(imm < 0):
+    if rs2 not in reg_map:  #invalid register check
+        raise ValueError(f"Line {idx}: Invalid register")
+
+    if imm < 0:     #if imm is negative no.
         imm = (1 << 12) + imm
 
-    imm_bin = format(imm, "012b")
+    imm_bin = format(imm, "012b")  #converting to binary
+    imm_11_5 = imm_bin[:7]         #first seven bits
+    imm_4_0 = imm_bin[7:]          #after seven bits
 
-    # split immediate as required by S-type format
-    imm_11_5 = imm_bin[:7]
-    imm_4_0  = imm_bin[7:]
-
-    rs1_bin = format(reg_map[rs1], "05b")
+    rs1_bin = format(reg_map[rs1], "05b")  #converting to binary
     rs2_bin = format(reg_map[rs2], "05b")
 
-    # final instruction format
-    return imm_11_5 + rs2_bin + rs1_bin + funct3 + imm_4_0 + opcode
+    return imm_11_5 + rs2_bin + rs1_bin + funct3 + imm_4_0 + opcode   #final output
