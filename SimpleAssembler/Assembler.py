@@ -70,8 +70,8 @@ def assemble(lines, labels):
     PC = 0
     output_lines = []
 
-    for line in lines:
-        label, rest = label_finding(line)
+    for idx, line in lines:
+        rest = line
 
         if(rest == ""):     # Skipping the empty line
             continue
@@ -122,13 +122,12 @@ def assemble(lines, labels):
     return output_lines
 
 
-if len(sys.argv) < 2:
-    print("Usage: python assembler.py <input_file>")
+if len(sys.argv) < 3:
+    print("Usage: python Assembler.py <input_file> <output_file>")
     sys.exit()
 
-if len(sys.argv) >= 3:
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+input_file = sys.argv[1]
+output_file = sys.argv[2]
         
     with open(input_file, "r") as f:
         lines = f.readlines()
@@ -156,7 +155,11 @@ if(not final_halt(listing(instruction_lines[-1][1]))):
 
 try:
     out_lines = assemble(instruction_lines, labels)
-    for line in out_lines:
-        print(line)
+
+    with open(output_file, "w") as f:
+        for line in out_lines:
+            f.write(line + "\n")
+
 except Exception as e:
-    print(str(e))
+    with open(output_file, "w") as f:
+        f.write(str(e) + "\n")
