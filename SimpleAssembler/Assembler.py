@@ -1,7 +1,7 @@
 import sys
 
-from R_type import R_type
-from I_type import I_type
+from R_type import r_type
+from I_type import i_type
 from s_type import s_type
 from b_type import b_type
 from u_type import u_type
