@@ -70,12 +70,10 @@ def assemble(lines, labels):
     PC = 0
     output_lines = []
 
-    idx = 1
     for line in lines:
         label, rest = label_finding(line)
 
         if(rest == ""):     # Skipping the empty line
-            idx += 1
             continue
 
         unit = listing(rest)    # Getting list of each instruction line
@@ -124,15 +122,16 @@ def assemble(lines, labels):
     return output_lines
 
 
-# using sys instead of input()
 if len(sys.argv) < 2:
     print("Usage: python assembler.py <input_file>")
     sys.exit()
 
-input_file = sys.argv[1]
-
-with open(input_file, "r") as f:        #reading the file
-    lines = f.readlines()
+if len(sys.argv) >= 3:
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+        
+    with open(input_file, "r") as f:
+        lines = f.readlines()
 
 lines = [ln.strip() for ln in lines if ln.strip() != ""]        #removes spaces and newline characters and removes blank lines too
 labels = label_table(lines)     #dictionary with label as key and it's corresponding PC value as key
@@ -140,10 +139,10 @@ labels = label_table(lines)     #dictionary with label as key and it's correspon
 instruction_lines = []      #this will contain only the instructions, without any label
 
 # Keeps only the actual instructions
-for line in lines:
-    l, rest = label_finding(line)
+for i in range(len(lines)):
+    l, rest = label_finding(lines[i])
     if(rest != ""):
-        instruction_lines.append(rest)
+        instruction_lines.append((i + 1, rest))
 
 # Checking if there are only label and not any instructions Eg:- loop:
 if(not instruction_lines):
@@ -151,7 +150,7 @@ if(not instruction_lines):
     sys.exit()
 
 # Checking if the last instruction is HALT or not
-if(not final_halt(listing(instruction_lines[-1]))):
+if(not final_halt(listing(instruction_lines[-1][1]))):
     print("Virtual Halt missing or not last")
     sys.exit()
 
