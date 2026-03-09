@@ -7,6 +7,7 @@ from b_type import b_type
 from u_type import u_type
 from j_type import j_type
 
+
 R_TYPE = {"add","sub","sll","slt","sltu","xor","srl","or","and"}
 I_TYPE = {"lw","addi","sltiu","jalr"}
 S_TYPE = {"sw"}
@@ -22,26 +23,32 @@ all_mnemonics += list(B_TYPE)
 all_mnemonics += list(U_TYPE)
 all_mnemonics += list(J_TYPE)
 
-def final_halt(unit):
-    return (len(unit) == 4 and unit[0] == "beq" and unit[1] == "zero" and 
-        unit[2] == "zero" and unit[3] in {"0","0x0","0x00000000"})
 
-# Finds the label in the instruction and seperates it from the rest of the instruction if found
+def final_halt(unit):
+    return (
+        len(unit) == 4 and
+        unit[0] == "beq" and
+        unit[1] in {"zero","x0"} and
+        unit[2] in {"zero","x0"} and
+        unit[3] in {"0","0x0","0x00000000"}
+    )
+
 def label_finding(line):
-    if(":" not in line):    # IF there is no label in the line
+    if ":" not in line:
         return None, line.strip()
 
-    left, right = line.split(":", 1)    # IF there is label in the line
-    label = left.strip()    #label
-    rest = right.strip()    #rest of the instruction
+    left, right = line.split(":", 1)
+    label = left.strip()
+    rest = right.strip()
+
     return label, rest
 
-# Splits each instruction
+
 def listing(instr):
     instr = instr.replace(",", " ")
     return instr.split()
 
-# Read the whole instruction set and makes a dictionary of label as key and their memory addresses as values
+
 def label_table(lines):
     PC = 0
     labels = {}
@@ -50,40 +57,43 @@ def label_table(lines):
     for line in lines:
         label, rest = label_finding(line)
 
-        if(label != None):      #if there is any label in the instruction
-            if(not label or not label[0].isalpha()):    # Checking that label is not empty as well as starts with alphabet
+        if label is not None:
+
+            if not label or not label[0].isalpha():
                 raise ValueError(f"Invalid label {label} in line {idx}")
-            
-            if(label in labels):        # No same label should be present
+
+            if label in labels:
                 raise ValueError(f"Same label {label} in line {idx}")
-            
+
             labels[label] = PC
 
-        if(rest != ""):     # Updating the PC if instuction is not empty
+        if rest != "":
             PC += 4
-        
-        idx += 1        # Updating the line of instruction
+
+        idx += 1
+
     return labels
 
-# Converts all assembly instructions into 32-bits machine code
+
 def assemble(lines, labels):
+
     PC = 0
     output_lines = []
 
     for idx, line in lines:
+
         rest = line
 
-        if(rest == ""):     # Skipping the empty line
+        if rest == "":
             continue
 
-        unit = listing(rest)    # Getting list of each instruction line
-        mnemonic = unit[0]      # The main diffentiating operation
+        unit = listing(rest)
+        mnemonic = unit[0]
 
-        if(mnemonic not in all_mnemonics):      # For any unknown instruction
+        if mnemonic not in all_mnemonics:
             raise ValueError(f"Unknown instruction {mnemonic} at line {idx}")
 
-        # Identifing the correct instruction type and calling it
-        if(mnemonic in R_TYPE):
+        if mnemonic in R_TYPE:
             bin32 = r_type(unit, idx)
 
         elif mnemonic in I_TYPE:
@@ -93,73 +103,109 @@ def assemble(lines, labels):
             bin32 = s_type(unit, idx)
 
         elif mnemonic in B_TYPE:
+
             if unit[3] in labels:
                 off = labels[unit[3]] - PC
             else:
-                off = int(unit[3], 0)  # allows decimal immediate
+                off = int(unit[3], 0)
 
             bin32 = b_type(unit[0], unit[1], unit[2], off)
+
             if bin32 is None:
                 raise ValueError(f"Invalid branch encoding line {idx}")
-            
+
         elif mnemonic in U_TYPE:
             bin32 = u_type(unit[0], unit[1], int(unit[2]))
 
         elif mnemonic in J_TYPE:
 
-            if(unit[2] not in labels):
+            if unit[2] not in labels:
                 raise ValueError(f"Unknown label {unit[2]} at line {idx}")
 
-            offset = labels[unit[2]] - PC        # Finding the new memory address
+            offset = labels[unit[2]] - PC
             bin32 = j_type(unit[1], offset)
 
-        if(len(bin32) != 32):
+        if len(bin32) != 32:
             raise ValueError(f"Encoder must return 32-bit binary string at line {idx}")
 
         output_lines.append(bin32)
+
         PC += 4
-        idx += 1
+
     return output_lines
 
 
-if len(sys.argv) < 3:
-    print("Usage: python Assembler.py <input_file> <output_file>")
-    sys.exit()
+# -------------------------
+# Input handling
+# -------------------------
 
-input_file = sys.argv[1]
-output_file = sys.argv[2]
-        
+if len(sys.argv) >= 3:
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+
     with open(input_file, "r") as f:
         lines = f.readlines()
 
-lines = [ln.strip() for ln in lines if ln.strip() != ""]        #removes spaces and newline characters and removes blank lines too
-labels = label_table(lines)     #dictionary with label as key and it's corresponding PC value as key
+    write_to_file = True
 
-instruction_lines = []      #this will contain only the instructions, without any label
+else:
 
-# Keeps only the actual instructions
-for i in range(len(lines)):
-    l, rest = label_finding(lines[i])
-    if(rest != ""):
-        instruction_lines.append((i + 1, rest))
+    lines = sys.stdin.readlines()
+    write_to_file = False
 
-# Checking if there are only label and not any instructions Eg:- loop:
-if(not instruction_lines):
-    print("No instructions found")
+
+lines = [ln.strip() for ln in lines if ln.strip() != ""]
+
+
+def write_error(msg):
+
+    if write_to_file:
+        with open(output_file, "w") as f:
+            f.write(msg + "\n")
+    else:
+        print(msg)
+
     sys.exit()
 
-# Checking if the last instruction is HALT or not
-if(not final_halt(listing(instruction_lines[-1][1]))):
-    print("Virtual Halt missing or not last")
-    sys.exit()
 
 try:
+    labels = label_table(lines)
+except Exception as e:
+    write_error(str(e))
+
+
+instruction_lines = []
+
+for i in range(len(lines)):
+    l, rest = label_finding(lines[i])
+
+    if rest != "":
+        instruction_lines.append((i + 1, rest))
+
+
+if not instruction_lines:
+    write_error("No instructions found")
+
+
+if not final_halt(listing(instruction_lines[-1][1])):
+    write_error("Virtual Halt missing or not last")
+
+
+try:
+
     out_lines = assemble(instruction_lines, labels)
 
-    with open(output_file, "w") as f:
+    if write_to_file:
+
+        with open(output_file, "w") as f:
+            for line in out_lines:
+                f.write(line + "\n")
+
+    else:
+
         for line in out_lines:
-            f.write(line + "\n")
+            print(line)
 
 except Exception as e:
-    with open(output_file, "w") as f:
-        f.write(str(e) + "\n")
+    write_error(str(e))
