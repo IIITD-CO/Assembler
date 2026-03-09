@@ -1,5 +1,12 @@
 import sys
 
+from R_type import r_type
+from I_type import i_type
+from s_type import s_type
+from b_type import b_type
+from u_type import u_type
+from j_type import j_type
+
 R_TYPE = {"add","sub","sll","slt","sltu","xor","srl","or","and"}
 I_TYPE = {"lw","addi","sltiu","jalr"}
 S_TYPE = {"sw"}
@@ -14,24 +21,6 @@ all_mnemonics += list(S_TYPE)
 all_mnemonics += list(B_TYPE)
 all_mnemonics += list(U_TYPE)
 all_mnemonics += list(J_TYPE)
-
-def r_type(unit, idx):
-    return
-
-def i_type(unit, PC, labels, idx):
-    return
-
-def s_type(unit, idx):
-    return
-
-def b_type(unit, PC, labels, idx):
-    return
-
-def u_type(unit, idx):
-    return
-
-def j_type(unit, PC, labels, idx):
-    return
 
 def final_halt(unit):
     return (len(unit) == 4 and unit[0] == "beq" and unit[1] == "zero" and 
